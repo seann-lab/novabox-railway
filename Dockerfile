@@ -4,14 +4,19 @@ FROM python:3.11-slim
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies, Chromium, and ttyd (web terminal)
+# Install system dependencies & Chromium
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     chromium-driver \
     git \
     curl \
-    ttyd \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Install ttyd binary directly from release
+RUN curl -sLO https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
+    && chmod +x ttyd.x86_64 \
+    && mv ttyd.x86_64 /usr/local/bin/ttyd
 
 WORKDIR /app
 
