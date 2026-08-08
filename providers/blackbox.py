@@ -75,6 +75,7 @@ class BlackboxClient:
                 "--no-first-run",
                 "--disable-accelerated-2d-canvas",
                 "--disable-extensions",
+                "--disable-blink-features=AutomationControlled",
             ]
         }
         if executable_path:
@@ -140,16 +141,26 @@ class BlackboxClient:
         await pass_input.wait_for(state="visible", timeout=10_000)
         await pass_input.fill(password)
 
+        # Human-like delay before click
+        await asyncio.sleep(1)
+
         submit = page.locator('button[type="submit"]').first
         await submit.click()
 
-        # Give the server action time to send request and load OTP screen
-        await _wait_any(
-            page,
-            ["text=Verify", "input[maxlength='6']", "text=verification", "text=code"],
-            timeout=30_000,
-            hint="OTP screen after signup",
-        )
+        # Check if form submission triggered CAPTCHA / Bot block or moved to OTP
+        try:
+            await _wait_any(
+                page,
+                ["text=Verify", "input[maxlength='6']", "text=verification", "text=code"],
+                timeout=30_000,
+                hint="OTP screen after signup",
+            )
+        except BlackboxError as e:
+            # Check if page has Cloudflare / bot protection text
+            text = await page.content()
+            if "cf-turnstile" in text or "challenge-platform" in text or "Just a moment" in text:
+                raise BlackboxError("Cloudflare CAPTCHA challenge detected on Railway IP") from e
+            raise e
 
     # ------------------------------------------------------------------
     # Step 2 — OTP verification
