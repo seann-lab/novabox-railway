@@ -71,6 +71,10 @@ class BlackboxClient:
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
+                "--no-zygote",
+                "--no-first-run",
+                "--disable-accelerated-2d-canvas",
+                "--disable-extensions",
             ]
         }
         if executable_path:
@@ -126,7 +130,7 @@ class BlackboxClient:
 
     async def signup(self, email: str, password: str) -> None:
         page = self.page
-        await page.goto(f"{self._cfg.blackbox_url}/signup", wait_until="networkidle", timeout=60_000)
+        await page.goto(f"{self._cfg.blackbox_url}/signup", wait_until="domcontentloaded", timeout=60_000)
 
         email_input = page.locator('input[type="email"], input[name="email"]').first
         await email_input.wait_for(state="visible", timeout=30_000)
@@ -185,7 +189,7 @@ class BlackboxClient:
             lambda r: asyncio.create_task(self._capture_key_response(r)),
         )
 
-        await page.goto(f"{self._cfg.blackbox_url}/keys", wait_until="networkidle", timeout=60_000)
+        await page.goto(f"{self._cfg.blackbox_url}/keys", wait_until="domcontentloaded", timeout=60_000)
         create_btn = page.locator('button:has-text("CREATE KEY")').first
         await create_btn.wait_for(state="visible", timeout=30_000)
         await create_btn.click()
