@@ -71,11 +71,7 @@ class BlackboxClient:
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--no-zygote",
-                "--no-first-run",
-                "--disable-accelerated-2d-canvas",
-                "--disable-extensions",
-                "--disable-blink-features=AutomationControlled",
+                "--disable-software-rasterizer",
             ]
         }
         if executable_path:

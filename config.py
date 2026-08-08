@@ -10,7 +10,7 @@ class Config:
 
     blackbox_url: str = "https://app.blackbox.ai"
     tempmail_domain: str = "catchmail.io"
-    max_workers: int = 3
+    max_workers: int = 1
     verify_poll_timeout: int = 120
     verify_poll_interval: int = 3
     request_timeout: int = 30
