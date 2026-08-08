@@ -35,5 +35,5 @@ COPY . .
 # Expose Web Terminal Port
 EXPOSE 8080
 
-# Run ttyd serving main.py (TUI) on $PORT
-CMD ["sh", "-c", "ttyd -p ${PORT:-8080} -m 1 python main.py"]
+# Run ttyd serving main.py (TUI) on $PORT with writable permission (-W)
+CMD ["sh", "-c", "ttyd -p ${PORT:-8080} -W python main.py"]
