@@ -27,35 +27,41 @@ def generate_email(domain: str = "catchmail.io") -> str:
 
 async def fetch_messages(email: str, *, timeout: int = 30) -> list[dict[str, object]]:
     """Return the message list for a mailbox, or [] on any API failure."""
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.get(
-            "https://api.catchmail.io/api/v1/mailbox",
-            params={"address": email},
-        )
-        if resp.status_code >= 400:
+    try:
+        async with httpx.AsyncClient(timeout=timeout, verify=False) as client:
+            resp = await client.get(
+                "https://api.catchmail.io/api/v1/mailbox",
+                params={"address": email},
+            )
+            if resp.status_code >= 400:
+                return []
+            data = resp.json()
+            if isinstance(data, list):
+                return data  # type: ignore[return-value]
+            if isinstance(data, dict):
+                for key in ("messages", "emails", "data", "results"):
+                    value = data.get(key)
+                    if isinstance(value, list):
+                        return value  # type: ignore[return-value]
             return []
-        data = resp.json()
-        if isinstance(data, list):
-            return data  # type: ignore[return-value]
-        if isinstance(data, dict):
-            for key in ("messages", "emails", "data", "results"):
-                value = data.get(key)
-                if isinstance(value, list):
-                    return value  # type: ignore[return-value]
+    except Exception:
         return []
 
 
 async def read_message(message_id: str, email: str, *, timeout: int = 30) -> dict[str, object]:
     """Fetch a single message body (needed to find the OTP)."""
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.get(
-            f"https://api.catchmail.io/api/v1/message/{message_id}",
-            params={"mailbox": email},
-        )
-        if resp.status_code >= 400:
-            return {}
-        data = resp.json()
-        return data if isinstance(data, dict) else {}
+    try:
+        async with httpx.AsyncClient(timeout=timeout, verify=False) as client:
+            resp = await client.get(
+                f"https://api.catchmail.io/api/v1/message/{message_id}",
+                params={"mailbox": email},
+            )
+            if resp.status_code >= 400:
+                return {}
+            data = resp.json()
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
 
 
 def extract_otp(full_message: dict[str, object]) -> str | None:

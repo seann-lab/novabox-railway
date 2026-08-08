@@ -566,6 +566,18 @@ def menu_status():
 # ─── Main ─────────────────────────────────────────────────────────────
 
 def main():
+    if len(sys.argv) > 1:
+        import argparse
+        parser = argparse.ArgumentParser(description="Novabox CLI Runner")
+        parser.add_argument("--count", type=int, default=10, help="Jumlah akun yang didaftarkan")
+        parser.add_argument("--workers", type=int, default=3, help="Jumlah worker browser paralel")
+        parser.add_argument("--headless", action="store_true", default=True, help="Jalankan browser di mode headless")
+        parser.add_argument("--domain", type=str, default="catchmail.io", help="Domain email sementara")
+        args = parser.parse_args()
+
+        _do_register(args.count, args.workers, args.headless, args.domain, resume=False)
+        return
+
     try:
         while True:
             choice = main_menu()

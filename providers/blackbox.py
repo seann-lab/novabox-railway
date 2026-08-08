@@ -62,9 +62,21 @@ class BlackboxClient:
 
     async def start(self) -> None:
         self._playwright = await async_playwright().start()
-        self._browser = await self._playwright.chromium.launch(
-            headless=self._cfg.headless,
-        )
+        import os
+        executable_path = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH")
+        launch_kwargs = {
+            "headless": self._cfg.headless,
+            "args": [
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ]
+        }
+        if executable_path:
+            launch_kwargs["executable_path"] = executable_path
+
+        self._browser = await self._playwright.chromium.launch(**launch_kwargs)
         self._context = await self._browser.new_context()
         self._page = await self._context.new_page()
 
@@ -114,7 +126,7 @@ class BlackboxClient:
 
     async def signup(self, email: str, password: str) -> None:
         page = self.page
-        await page.goto(f"{self._cfg.blackbox_url}/signup", wait_until="domcontentloaded")
+        await page.goto(f"{self._cfg.blackbox_url}/signup", wait_until="networkidle", timeout=60_000)
 
         email_input = page.locator('input[type="email"], input[name="email"]').first
         await email_input.wait_for(state="visible", timeout=30_000)
@@ -124,16 +136,14 @@ class BlackboxClient:
         await pass_input.wait_for(state="visible", timeout=10_000)
         await pass_input.fill(password)
 
-        # The form is a Next.js server action — clicking the submit button
-        # fires the multipart POST /signup captured in the network log.
         submit = page.locator('button[type="submit"]').first
         await submit.click()
 
-        # Give the server action a moment to round-trip before the OTP screen.
+        # Give the server action time to send request and load OTP screen
         await _wait_any(
             page,
             ["text=Verify", "input[maxlength='6']", "text=verification", "text=code"],
-            timeout=15_000,
+            timeout=30_000,
             hint="OTP screen after signup",
         )
 
@@ -175,7 +185,7 @@ class BlackboxClient:
             lambda r: asyncio.create_task(self._capture_key_response(r)),
         )
 
-        await page.goto(f"{self._cfg.blackbox_url}/keys", wait_until="domcontentloaded")
+        await page.goto(f"{self._cfg.blackbox_url}/keys", wait_until="networkidle", timeout=60_000)
         create_btn = page.locator('button:has-text("CREATE KEY")').first
         await create_btn.wait_for(state="visible", timeout=30_000)
         await create_btn.click()
